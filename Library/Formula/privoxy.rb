@@ -16,10 +16,14 @@ class Privoxy < Formula
   depends_on 'pcre'
 
   def install
-    # Find Homebrew's libpcre
+    # Replace advertisements with blank.
+    inreplace 'user.action', /^#\/$/, '/'
+
+    # Find Homebrew's libpcre.
     ENV.append 'LDFLAGS', "-L#{HOMEBREW_PREFIX}/lib"
 
-    # No configure script is shipped with the source
+    # Build the configure script.
+    system "autoheader"
     system "autoreconf", "-i"
 
     system "./configure", "--disable-debug",
@@ -29,6 +33,10 @@ class Privoxy < Formula
                           "--localstatedir=#{var}"
     system "make"
     system "make install"
+  end
+
+  test do
+    system "#{sbin}/privoxy", "--version"
   end
 
   plist_options :manual => "privoxy #{HOMEBREW_PREFIX}/etc/privoxy/config"
@@ -42,16 +50,20 @@ class Privoxy < Formula
       <true/>
       <key>Label</key>
       <string>#{plist_name}</string>
-      <key>WorkingDirectory</key>
-      <string>#{var}</string>
+      <key>RunAtLoad</key>
+      <true/>
       <key>ProgramArguments</key>
       <array>
-        <string>#{sbin}/privoxy</string>
+        <string>#{opt_prefix}/sbin/privoxy</string>
         <string>--no-daemon</string>
         <string>#{etc}/privoxy/config</string>
       </array>
-      <key>RunAtLoad</key>
-      <true/>
+      <key>WorkingDirectory</key>
+      <string>#{HOMEBREW_PREFIX}</string>
+      <key>StandardErrorPath</key>
+      <string>#{var}/log/privoxy/error.log</string>
+      <key>StandardOutPath</key>
+      <string>#{var}/log/privoxy/access.log</string>
     </dict>
     </plist>
     EOS
